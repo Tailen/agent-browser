@@ -88,6 +88,7 @@ export class BrowserManager {
   private pages: Page[] = [];
   private activePageIndex: number = 0;
   private activeFrame: Frame | null = null;
+  private activeFrameLocator: string | null = null;
   private dialogHandler: ((dialog: Dialog) => Promise<void>) | null = null;
   private trackedRequests: TrackedRequest[] = [];
   private routes: Map<string, (route: Route) => Promise<void>> = new Map();
@@ -212,9 +213,19 @@ export class BrowserManager {
     const locator = this.getLocatorFromRef(selectorOrRef);
     if (locator) return locator;
 
-    // Otherwise treat as regular selector
-    const page = this.getPage();
-    return page.locator(selectorOrRef);
+    // Same-origin frame selected via "frame <selector>"
+    const activeFrame = this.getActiveFrameForCurrentPage();
+    if (activeFrame) {
+      return activeFrame.locator(selectorOrRef);
+    }
+
+    // Cross-origin frame selected via "frame locator <selector>"
+    if (this.activeFrameLocator) {
+      return this.getPage().frameLocator(this.activeFrameLocator).locator(selectorOrRef);
+    }
+
+    // Otherwise treat as regular page selector
+    return this.getPage().locator(selectorOrRef);
   }
 
   /**
@@ -268,10 +279,24 @@ export class BrowserManager {
    * Get the current frame (or page's main frame if no frame is selected)
    */
   getFrame(): Frame {
-    if (this.activeFrame) {
-      return this.activeFrame;
+    const activeFrame = this.getActiveFrameForCurrentPage();
+    if (activeFrame) {
+      return activeFrame;
     }
     return this.getPage().mainFrame();
+  }
+
+  /**
+   * Return selected frame if it still belongs to the active page.
+   * Prevents stale frame handles after tab/window switches.
+   */
+  private getActiveFrameForCurrentPage(): Frame | null {
+    if (!this.activeFrame) return null;
+    if (this.activeFrame.page() !== this.getPage()) {
+      this.activeFrame = null;
+      return null;
+    }
+    return this.activeFrame;
   }
 
   /**
@@ -303,12 +328,24 @@ export class BrowserManager {
       }
       this.activeFrame = frame;
     }
+
+    // Regular frame targeting supersedes frameLocator targeting.
+    this.activeFrameLocator = null;
   }
 
   /**
    * Switch back to main frame
    */
   switchToMainFrame(): void {
+    this.activeFrame = null;
+    this.activeFrameLocator = null;
+  }
+
+  /**
+   * Set a frame locator for cross-origin iframe interaction.
+   */
+  setFrameLocator(selector: string | null): void {
+    this.activeFrameLocator = selector;
     this.activeFrame = null;
   }
 

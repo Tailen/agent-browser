@@ -777,6 +777,18 @@ describe('parseCommand', () => {
       const result = parseCommand(cmd({ id: '1', action: 'mainframe' }));
       expect(result.success).toBe(true);
     });
+
+    it('should parse framelocator', () => {
+      const result = parseCommand(
+        cmd({ id: '1', action: 'framelocator', selector: '#embed-frame' })
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject framelocator with empty selector', () => {
+      const result = parseCommand(cmd({ id: '1', action: 'framelocator', selector: '' }));
+      expect(result.success).toBe(false);
+    });
   });
 
   describe('screencast', () => {

@@ -65,6 +65,9 @@ agent-browser select @e1 "option"     # Select dropdown option
 agent-browser check @e1               # Check checkbox
 agent-browser press Enter             # Press key
 agent-browser scroll down 500         # Scroll page
+agent-browser frame "#embed-iframe"   # Switch to same-origin iframe
+agent-browser frame locator "#payment-iframe" # Switch to cross-origin iframe
+agent-browser frame main              # Return to main frame
 
 # Get information
 agent-browser get text @e1            # Get element text
@@ -148,6 +151,21 @@ agent-browser get text body > page.txt  # Get all page text
 # JSON output for parsing
 agent-browser snapshot -i --json
 agent-browser get text @e1 --json
+```
+
+### Iframe Interaction
+
+```bash
+# Same-origin iframe (direct frame handle)
+agent-browser frame "#embed-iframe"
+agent-browser click "#submit"
+
+# Cross-origin iframe (Playwright frameLocator path)
+agent-browser frame locator "#payment-iframe"
+agent-browser fill "input[name='cardnumber']" "4242424242424242"
+
+# Reset to top-level page
+agent-browser frame main
 ```
 
 ### Parallel Sessions

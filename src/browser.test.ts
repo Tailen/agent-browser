@@ -154,6 +154,80 @@ describe('BrowserManager', () => {
     });
   });
 
+  describe('frame context selection', () => {
+    it('should scope selectors to frame locator context', async () => {
+      const page = browser.getPage();
+      await page.setContent(`
+        <html>
+          <body>
+            <button class="target">outside</button>
+            <iframe
+              id="frame-one"
+              srcdoc="<button class='target'>inside-one</button>"
+            ></iframe>
+          </body>
+        </html>
+      `);
+
+      await page.frameLocator('#frame-one').locator('.target').waitFor();
+      browser.setFrameLocator('#frame-one');
+
+      const text = await browser.getLocator('.target').textContent();
+      expect(text).toBe('inside-one');
+    });
+
+    it('should clear frame locator when switching to main frame', async () => {
+      const page = browser.getPage();
+      await page.setContent(`
+        <html>
+          <body>
+            <button class="outside">outside</button>
+            <iframe
+              id="frame-one"
+              srcdoc="<button class='inside'>inside-one</button>"
+            ></iframe>
+          </body>
+        </html>
+      `);
+
+      await page.frameLocator('#frame-one').locator('.inside').waitFor();
+      browser.setFrameLocator('#frame-one');
+
+      expect(await browser.getLocator('.outside').count()).toBe(0);
+
+      browser.switchToMainFrame();
+
+      expect(await browser.getLocator('.outside').count()).toBe(1);
+    });
+
+    it('should let frame selection override existing frame locator context', async () => {
+      const page = browser.getPage();
+      await page.setContent(`
+        <html>
+          <body>
+            <iframe
+              id="frame-one"
+              srcdoc="<button class='target'>inside-one</button>"
+            ></iframe>
+            <iframe
+              id="frame-two"
+              srcdoc="<button class='target'>inside-two</button>"
+            ></iframe>
+          </body>
+        </html>
+      `);
+
+      await page.frameLocator('#frame-one').locator('.target').waitFor();
+      await page.frameLocator('#frame-two').locator('.target').waitFor();
+
+      browser.setFrameLocator('#frame-one');
+      await browser.switchToFrame({ selector: '#frame-two' });
+
+      const text = await browser.getLocator('.target').textContent();
+      expect(text).toBe('inside-two');
+    });
+  });
+
   describe('cursor-ref selector uniqueness', () => {
     it('should produce unique selectors for repeated DOM structures', async () => {
       const page = browser.getPage();

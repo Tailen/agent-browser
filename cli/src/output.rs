@@ -1420,13 +1420,14 @@ Examples:
             r##"
 agent-browser frame - Switch frame context
 
-Usage: agent-browser frame <selector|main>
+Usage: agent-browser frame <selector>|main|locator <selector>
 
-Switch to an iframe or back to the main frame.
+Switch iframe context for subsequent selector-based actions.
 
 Arguments:
-  <selector>           CSS selector for iframe
-  main                 Switch back to main frame
+  <selector>           Switch to same-origin iframe by CSS selector
+  main                 Clear iframe context and use main page
+  locator <selector>   Target iframe via frameLocator (supports cross-origin iframes)
 
 Global Options:
   --json               Output as JSON
@@ -1435,6 +1436,7 @@ Global Options:
 Examples:
   agent-browser frame "#embed-iframe"
   agent-browser frame "iframe[name='content']"
+  agent-browser frame locator "#payment-iframe"
   agent-browser frame main
 "##
         }

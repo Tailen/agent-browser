@@ -242,7 +242,8 @@ agent-browser window new              # New window
 ### Frames
 
 ```bash
-agent-browser frame <sel>             # Switch to iframe
+agent-browser frame <sel>             # Switch to same-origin iframe
+agent-browser frame locator <sel>     # Switch to iframe via frameLocator (cross-origin safe)
 agent-browser frame main              # Back to main frame
 ```
 

@@ -711,10 +711,16 @@ pub fn parse_command(args: &[String], flags: &Flags) -> Result<Value, ParseError
         "frame" => {
             if rest.first().copied() == Some("main") {
                 Ok(json!({ "id": id, "action": "mainframe" }))
+            } else if rest.first().copied() == Some("locator") {
+                let sel = rest.get(1).ok_or_else(|| ParseError::MissingArguments {
+                    context: "frame locator".to_string(),
+                    usage: "frame locator <selector>",
+                })?;
+                Ok(json!({ "id": id, "action": "framelocator", "selector": sel }))
             } else {
                 let sel = rest.first().ok_or_else(|| ParseError::MissingArguments {
                     context: "frame".to_string(),
-                    usage: "frame <selector|main>",
+                    usage: "frame <selector>|main|locator <selector>",
                 })?;
                 Ok(json!({ "id": id, "action": "frame", "selector": sel }))
             }
@@ -1980,6 +1986,27 @@ mod tests {
     fn test_frame_main() {
         let cmd = parse_command(&args("frame main"), &default_flags()).unwrap();
         assert_eq!(cmd["action"], "mainframe");
+    }
+
+    #[test]
+    fn test_frame_locator() {
+        let cmd = parse_command(&args("frame locator #checkout-iframe"), &default_flags()).unwrap();
+        assert_eq!(cmd["action"], "framelocator");
+        assert_eq!(cmd["selector"], "#checkout-iframe");
+    }
+
+    #[test]
+    fn test_frame_locator_requires_selector() {
+        let result = parse_command(&args("frame locator"), &default_flags());
+        assert!(result.is_err());
+
+        match result.unwrap_err() {
+            ParseError::MissingArguments { context, usage } => {
+                assert_eq!(context, "frame locator");
+                assert_eq!(usage, "frame locator <selector>");
+            }
+            e => panic!("expected MissingArguments, got {:?}", e),
+        }
     }
 
     // === Tabs ===
